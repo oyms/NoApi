@@ -160,6 +160,40 @@ public class RoutingTests : IDisposable
     }
 
     [Fact]
+    public async Task RespondsWithAnInlineBody()
+    {
+        var manifest = folder.WriteManifest("api.json",
+            new { path = "^/json$", response = new { body = new { id = 1 } } },
+            new { path = "^/text$", response = new { body = "plain text", contentType = "text/plain" } },
+            new { name = "Both", path = "^/both$", response = new { path = "x.json", body = 1 } });
+        await using var host = await NoApiHost.Start(manifest);
+
+        (await host.GetJson("/json")).GetProperty("id").GetInt32().ShouldBe(1);
+        (await host.GetString("/text")).ShouldBe("plain text");
+        (await host.ManifestRouteNames()).ShouldNotContain("Both");
+    }
+
+    [Fact]
+    public async Task ServesOpenApiDocumentsInTheFolder()
+    {
+        folder.Write("pets/openapi.yaml", GeneratorTests.Spec);
+        folder.Write("pets/other.yaml", GeneratorTests.Spec);
+        await using var host = await NoApiHost.Start(folder.Path);
+
+        (await host.ManifestRouteNames()).ShouldBe(["health", "getPet", "deletePet"]);
+        (await host.GetJson("/api/pets/7")).GetProperty("name").GetString().ShouldBe("Fido");
+    }
+
+    [Fact]
+    public async Task ServesAnOpenApiDocumentGivenAsAFile()
+    {
+        var spec = folder.Write("pets.yaml", GeneratorTests.Spec);
+        await using var host = await NoApiHost.Start(spec);
+
+        (await host.GetString("/api/health")).ShouldBe("healthy");
+    }
+
+    [Fact]
     public async Task RespondsWithAnErrorWhenTheResponseFileIsMissing()
     {
         var manifest = folder.WriteManifest("api.json",

@@ -30,6 +30,17 @@ public class FileWatchingTests : IDisposable
     }
 
     [Fact]
+    public async Task ReadsANewOpenApiDocumentInTheFolder()
+    {
+        await using var host = await NoApiHost.Start(folder.Path);
+
+        folder.Write("pets/openapi.yaml", GeneratorTests.Spec);
+
+        await NoApiHost.Eventually(async () => (await host.ManifestRouteNames()).Contains("getPet"),
+            "the new OpenAPI document is read");
+    }
+
+    [Fact]
     public async Task ForgetsARemovedManifest()
     {
         folder.WriteManifest("a/routes.json", new { name = "A", response = new { } });

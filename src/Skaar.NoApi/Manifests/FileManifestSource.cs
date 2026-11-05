@@ -11,5 +11,5 @@ internal sealed class FileManifestSource(string filePath)
     public override IReadOnlyList<string> GetManifestFiles() => File.Exists(filePath) ? [filePath] : [];
 
     protected override bool Concerns(string path, WatcherChangeTypes change) =>
-        IsNamed(path, Path.GetFileName(filePath));
+        IsNamed(path, [Path.GetFileName(filePath)]);
 }

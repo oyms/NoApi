@@ -32,7 +32,7 @@ public sealed class Server : IAsyncDisposable
             builder.WebHost.UseUrls(settings.Url);
         }
 
-        var source = ManifestSource.Create(manifestPath ?? Environment.CurrentDirectory, settings.ManifestFileName);
+        var source = ManifestSource.Create(manifestPath ?? Environment.CurrentDirectory, settings.FileNames);
         // Registered with a factory, so the container disposes it.
         builder.Services.AddSingleton(_ => source);
         builder.Services.AddSingleton<ManifestParser>();

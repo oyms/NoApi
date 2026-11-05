@@ -1,7 +1,7 @@
 namespace Skaar.NoApi.Manifests;
 
 /// <summary>
-/// All files with the manifest file name in a folder and its subfolders.
+/// All files with any of the file names (manifests and OpenAPI documents) in a folder and its subfolders.
 /// </summary>
 internal sealed class FolderManifestSource : ManifestSource
 {
@@ -12,23 +12,28 @@ internal sealed class FolderManifestSource : ManifestSource
     };
 
     private readonly string folderPath;
-    private readonly string manifestFileName;
+    private readonly IReadOnlyList<string> fileNames;
     private volatile IReadOnlyList<string> known = [];
 
-    public FolderManifestSource(string folderPath, string manifestFileName)
+    public FolderManifestSource(string folderPath, IReadOnlyList<string> fileNames)
         : base(folderPath, includeSubdirectories: true)
     {
         this.folderPath = folderPath;
-        this.manifestFileName = manifestFileName;
+        this.fileNames = fileNames;
     }
 
-    public override string Description => Path.Combine(folderPath, "**", manifestFileName);
+    public override string Description =>
+        Path.Combine(folderPath, "**", fileNames.Count == 1 ? fileNames[0] : $"{{{string.Join(",", fileNames)}}}");
 
     public override IReadOnlyList<string> GetManifestFiles() =>
-        known = [.. Directory.EnumerateFiles(folderPath, manifestFileName, Enumeration).Order(StringComparer.Ordinal)];
+        known =
+        [
+            .. fileNames.SelectMany(name => Directory.EnumerateFiles(folderPath, name, Enumeration))
+                .Distinct().Order(StringComparer.Ordinal)
+        ];
 
     protected override bool Concerns(string path, WatcherChangeTypes change) =>
-        IsNamed(path, manifestFileName) || change switch
+        IsNamed(path, fileNames) || change switch
         {
             // A folder with manifests may be copied or moved in.
             WatcherChangeTypes.Created or WatcherChangeTypes.Renamed => Directory.Exists(path),

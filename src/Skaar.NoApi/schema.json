@@ -7,6 +7,10 @@
     "$schema": {
       "type": "string"
     },
+    "source": {
+      "type": "string",
+      "description": "Where the manifest was generated from (an OpenAPI document). For information only."
+    },
     "routes": {
       "type": "array",
       "description": "The list of routes, in order of precedence.",
@@ -57,7 +61,10 @@
               "path": {
                 "type": "string",
                 "format": "uri-reference",
-                "description": "The path to the content file, relative to the manifest. The file is read on each request. Without a path, the body is empty."
+                "description": "The path to the content file, relative to the manifest. The file is read on each request. Without a path or a body, the body is empty."
+              },
+              "body": {
+                "description": "The content, as an alternative to a file. A string is written as it is, any other value as json."
               },
               "contentType": {
                 "type": "string",
@@ -76,6 +83,9 @@
                   "type": "string"
                 }
               }
+            },
+            "not": {
+              "required": ["path", "body"]
             },
             "additionalProperties": false
           }

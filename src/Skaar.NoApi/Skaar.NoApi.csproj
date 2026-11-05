@@ -12,7 +12,7 @@
         <Description>A local fake of any http api, serving files according to route manifests.</Description>
         <GenerateDocumentationFile>true</GenerateDocumentationFile>
         <NoWarn>$(NoWarn);CS1591;CA1822</NoWarn>
-        <VersionPrefix>1.0.0</VersionPrefix>
+        <VersionPrefix>1.1.0</VersionPrefix>
         <Product>No Api</Product>
         <Authors>Skaar</Authors>
         <PackageTags>Mock Fake Stub Api Http Testing</PackageTags>
@@ -28,6 +28,7 @@
         <PackageReleaseNotes>
             ---
             1.0.0: Initial release.
+            1.1.0: OpenAPI documents: generate manifests, or serve them directly. Inline response bodies.
         </PackageReleaseNotes>
     </PropertyGroup>
 
@@ -50,6 +51,11 @@
 
     <ItemGroup>
         <InternalsVisibleTo Include="Skaar.NoApi.Tests" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <PackageReference Include="Microsoft.OpenApi" Version="3.11.0" />
+      <PackageReference Include="Microsoft.OpenApi.YamlReader" Version="3.11.0" />
     </ItemGroup>
 
 </Project>

@@ -27,12 +27,12 @@ public abstract class ManifestSource : IDisposable
 
     /// <summary>
     /// Uses <paramref name="path"/> as a single manifest file if it is a file,
-    /// or searches it recursively for files named <paramref name="manifestFileName"/> if it is a folder.
+    /// or searches it recursively for files with any of the <paramref name="fileNames"/> if it is a folder.
     /// </summary>
-    public static ManifestSource Create(string path, string manifestFileName)
+    public static ManifestSource Create(string path, IReadOnlyList<string> fileNames)
     {
         path = Path.GetFullPath(path);
-        if (Directory.Exists(path)) return new FolderManifestSource(path, manifestFileName);
+        if (Directory.Exists(path)) return new FolderManifestSource(path, fileNames);
         if (File.Exists(path)) return new FileManifestSource(path);
         throw new ArgumentException($"The manifest file or folder '{path}' does not exist.", nameof(path));
     }
@@ -48,8 +48,8 @@ public abstract class ManifestSource : IDisposable
     /// <summary>Whether a change to <paramref name="path"/> may affect the set of manifests or their contents.</summary>
     protected abstract bool Concerns(string path, WatcherChangeTypes change);
 
-    protected static bool IsNamed(string path, string fileName) =>
-        string.Equals(Path.GetFileName(path), fileName, StringComparison.OrdinalIgnoreCase);
+    protected static bool IsNamed(string path, IEnumerable<string> fileNames) =>
+        fileNames.Contains(Path.GetFileName(path), StringComparer.OrdinalIgnoreCase);
 
     private void OnFileSystemEvent(object? sender, FileSystemEventArgs e)
     {

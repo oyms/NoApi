@@ -1,6 +1,8 @@
 using System.Text.Json;
 using System.Text.RegularExpressions;
+using Microsoft.OpenApi;
 using Skaar.NoApi.Model;
+using Skaar.NoApi.OpenApi;
 
 namespace Skaar.NoApi.Services;
 
@@ -10,12 +12,6 @@ namespace Skaar.NoApi.Services;
 /// </summary>
 internal sealed class ManifestParser(ILogger<ManifestParser> logger)
 {
-    private static readonly JsonSerializerOptions Options = new(JsonSerializerDefaults.Web)
-    {
-        ReadCommentHandling = JsonCommentHandling.Skip,
-        AllowTrailingCommas = true
-    };
-
     private static readonly TimeSpan MatchTimeout = TimeSpan.FromSeconds(1);
 
     public IReadOnlyList<Route> Parse(string manifestPath)
@@ -23,10 +19,10 @@ internal sealed class ManifestParser(ILogger<ManifestParser> logger)
         Manifest? manifest;
         try
         {
-            using var stream = File.OpenRead(manifestPath);
-            manifest = JsonSerializer.Deserialize<Manifest>(stream, Options);
+            manifest = Read(manifestPath);
         }
-        catch (Exception e) when (e is IOException or UnauthorizedAccessException or JsonException)
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException or JsonException or FormatException
+                                      or OpenApiException)
         {
             logger.LogError("Could not read manifest {Manifest}: {Message}", manifestPath, e.Message);
             return [];
@@ -51,6 +47,25 @@ internal sealed class ManifestParser(ILogger<ManifestParser> logger)
         return routes;
     }
 
+    /// <summary>Reads a manifest, or converts an OpenAPI document to one.</summary>
+    private Manifest? Read(string path)
+    {
+        var content = File.ReadAllText(path);
+        if (!OpenApiLoader.IsOpenApi(path, content))
+        {
+            return JsonSerializer.Deserialize<Manifest>(content, ManifestJson.Options);
+        }
+
+        var document = OpenApiLoader.Parse(content, out var diagnostics);
+        var (manifest, warnings) = OpenApiConverter.Convert(document, path);
+        foreach (var message in diagnostics.Concat(warnings))
+        {
+            logger.LogWarning("{Manifest}: {Message}", path, message);
+        }
+
+        return manifest;
+    }
+
     private static Route CreateRoute(RouteDefinition definition, string directory, string manifestPath)
     {
         var response = definition.Response ?? throw new FormatException("A route must have a response.");
@@ -66,15 +81,29 @@ internal sealed class ManifestParser(ILogger<ManifestParser> logger)
                     p.Parameter ?? throw new FormatException("A parameter must have a name."),
                     p.Value is null ? Route.MatchAll : CreateRegex(p.Value)))
             ],
-            Response = new RouteResponse(response.Path is null
-                ? ResponseBody.Empty
-                : ResponseBody.FromFile(Path.GetFullPath(response.Path, directory)))
+            Response = new RouteResponse(CreateBody(response, directory))
             {
                 StatusCode = response.StatusCode ?? StatusCodes.Status200OK,
                 ContentType = response.ContentType ?? RouteResponse.DefaultContentType,
                 Headers = response.Headers ?? []
             }
         };
+    }
+
+    private static Func<HttpResponse, Task> CreateBody(ResponseDefinition response, string directory)
+    {
+        switch (response)
+        {
+            case { Path: not null, Body: not null }:
+                throw new FormatException("A response cannot have both a path and a body.");
+            case { Path: { } path }:
+                return ResponseBody.FromFile(Path.GetFullPath(path, directory));
+            case { Body: { } body }:
+                var text = ManifestJson.BodyText(body);
+                return ResponseBody.FromText(() => text);
+            default:
+                return ResponseBody.Empty;
+        }
     }
 
     private static Verb ParseMethod(string? method) =>

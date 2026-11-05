@@ -16,4 +16,14 @@ public sealed class Settings
     /// The name of the manifest files to look for when the manifest location is a folder.
     /// </summary>
     public string ManifestFileName { get; init; } = "routes.json";
+
+    /// <summary>
+    /// The names of OpenAPI documents to serve as manifests when the manifest location is a folder.
+    /// </summary>
+    public string[]? OpenApiFileNames { get; init; }
+
+    /// <summary>All the file names to look for when the manifest location is a folder.</summary>
+    public IReadOnlyList<string> FileNames => [ManifestFileName, .. OpenApiFileNames ?? DefaultOpenApiFileNames];
+
+    private static readonly string[] DefaultOpenApiFileNames = ["openapi.json", "openapi.yaml", "openapi.yml"];
 }
