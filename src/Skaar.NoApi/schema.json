@@ -1,0 +1,90 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "NoApi route manifest",
+  "description": "The routes NoApi responds to, and the responses. The first matching route is used.",
+  "type": "object",
+  "properties": {
+    "$schema": {
+      "type": "string"
+    },
+    "routes": {
+      "type": "array",
+      "description": "The list of routes, in order of precedence.",
+      "items": {
+        "type": "object",
+        "description": "A single route, defining the required request properties and the resulting response.",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "The name of the route (for logging and debugging)."
+          },
+          "method": {
+            "type": "string",
+            "description": "The required http method(s), comma separated (e.g. \"GET, POST\"). Defaults to ANY.",
+            "pattern": "^\\s*(?i:ANY|((GET|POST|PUT|PATCH|DELETE|HEAD|OPTIONS)(\\s*,\\s*(GET|POST|PUT|PATCH|DELETE|HEAD|OPTIONS))*))\\s*$",
+            "examples": ["ANY", "GET", "POST", "GET, POST", "PUT", "PATCH", "DELETE"]
+          },
+          "path": {
+            "type": "string",
+            "format": "regex",
+            "description": "A regex pattern to test the (url encoded) request path against. Use ^ and $ to match the whole path. Defaults to any path."
+          },
+          "parameters": {
+            "type": "array",
+            "description": "Requirements for query parameters or form fields. All must be met.",
+            "items": {
+              "type": "object",
+              "description": "A query parameter or form field which must be present, with a value matching the pattern.",
+              "properties": {
+                "parameter": {
+                  "type": "string",
+                  "description": "The name of the parameter."
+                },
+                "value": {
+                  "type": "string",
+                  "format": "regex",
+                  "description": "A regex pattern to test the value against. Defaults to any value."
+                }
+              },
+              "required": ["parameter"],
+              "additionalProperties": false
+            }
+          },
+          "response": {
+            "type": "object",
+            "description": "The resulting response for this route.",
+            "properties": {
+              "path": {
+                "type": "string",
+                "format": "uri-reference",
+                "description": "The path to the content file, relative to the manifest. The file is read on each request. Without a path, the body is empty."
+              },
+              "contentType": {
+                "type": "string",
+                "description": "The content-type header of the response. Defaults to application/json."
+              },
+              "statusCode": {
+                "type": "integer",
+                "minimum": 100,
+                "maximum": 599,
+                "description": "The status code of the response. Defaults to 200."
+              },
+              "headers": {
+                "type": "object",
+                "description": "Additional response headers.",
+                "additionalProperties": {
+                  "type": "string"
+                }
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "required": ["response"],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": ["routes"],
+  "additionalProperties": false
+}

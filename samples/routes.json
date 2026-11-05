@@ -1,0 +1,62 @@
+{
+  "$schema": "../src/Skaar.NoApi/schema.json",
+  "routes": [
+    {
+      "name": "List users",
+      "method": "GET",
+      "path": "^/api/users/?$",
+      "response": {
+        "path": "./responses/users.json"
+      }
+    },
+    {
+      "name": "Single user",
+      "method": "GET",
+      "path": "^/api/users/1$",
+      "response": {
+        "path": "./responses/user.json"
+      }
+    },
+    {
+      "name": "Unknown user",
+      "method": "GET",
+      "path": "^/api/users/[^/]+$",
+      "response": {
+        "path": "./responses/not-found.json",
+        "contentType": "application/problem+json",
+        "statusCode": 404
+      }
+    },
+    {
+      "name": "Create user",
+      "method": "POST",
+      "path": "^/api/users/?$",
+      "response": {
+        "path": "./responses/user.json",
+        "statusCode": 201,
+        "headers": {
+          "Location": "/api/users/1"
+        }
+      }
+    },
+    {
+      "name": "Search by name",
+      "method": "GET, POST",
+      "path": "^/api/search$",
+      "parameters": [
+        { "parameter": "name", "value": "^(?i)ola" }
+      ],
+      "response": {
+        "path": "./responses/users.json"
+      }
+    },
+    {
+      "name": "Delete user",
+      "method": "DELETE",
+      "path": "^/api/users/[^/]+$",
+      "response": {
+        "statusCode": 204
+      }
+    }
+  ]
+}

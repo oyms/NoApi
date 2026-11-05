@@ -1,0 +1,12 @@
+# NoApi serving the samples folder. Changes to the manifests are picked up while running.
+#
+# From the host:             http://localhost:8080/api/users
+# From other containers:     http://noapi:8080/api/users
+services:
+  noapi:
+    build: .
+    image: noapi
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./samples:/manifests:ro
